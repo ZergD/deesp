@@ -6,15 +6,12 @@ To use (with caution), simply do::
    >>> import deesp
    >>> print(deesp.blague)
 
-Useful cmds::
+Useful cmds
+::
    for installing locally: python3 setup.py develop
+   everything we say here is going to be a block balblablablablabalabla
 
-.. hlist::
-   :columns: 3
-   
-   * first item
-   * second item
-   * 3d item
-   * 4th item
-   * 5th item
+Here we go back to writing. 
+Deespp has multiple functionalities
+
 
