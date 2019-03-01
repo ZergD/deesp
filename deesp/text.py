@@ -1,4 +1,5 @@
 from markdown import markdown
+import deesp
 
 
 def blague():
