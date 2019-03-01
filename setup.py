@@ -17,4 +17,7 @@ setup(name='deesp',
       ],
       test_suite='nose.collector',
       tests_require=['nose'],
+      entry_points={
+          'console_scripts':['test=deesp.cmd_line:main'], 
+      },
       zip_safe=False)
