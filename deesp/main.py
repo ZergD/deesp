@@ -37,6 +37,9 @@ def main():
     # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
     deesp.compute_load_outage()
 
+    # we retrieve the topology
+    deesp.retrieve_topology()
+
     # Build Overload Distribution Graph
     # deesp.build_overload_graph()
 

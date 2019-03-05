@@ -1,5 +1,6 @@
 """ This file is the main file for the Expert Agent called Deesp """
 import functools
+import numpy as np
 
 
 def calltracker(func):
@@ -25,9 +26,13 @@ class Deesp:
         # this is the grid from pypownet
         self.grid = None
         self.id_line_cut = None
+        # electric flows, array representing the flows on each edge
         self.initial_e_flows = None
         self.new_e_flows = None
         self.delta_e_flows = None
+        # topology part, idx_or is an array of edges representing the edge's origins. Same respectively with idx_ex.
+        self.idx_or = None
+        self.idx_ex = None
 
     def load(self, _grid):
         """
@@ -73,10 +78,39 @@ class Deesp:
     # def build_overload_graph(self):
     #     """We build an overload graph.
     #     First we check if we computed the load outage"""
-    #     if self.compute_load_outage.has_been_called:
-    #         print("yes this function was already run")
+    #
+    #     if self.compute_load_outage.has_been_called and self.retrieve_topology.has_been_called:
+    #         if self.debug:
+    #             print("============================= FUNCTION build_overload_graph =============================")
+    #             print("Functions: compute_load_outage() and retrieve_topology have both been called, we can build the "
+    #                   "overload_graph")
+    #             pass
     #     else:
-    #         print("No, function \"{}\" has not been called yet".format(self.build_overload_graph.__name__))
+    #         if self.debug:
+    #             raise RuntimeError("Error, function \"{}\" or \"{}\" has not been called yet".format(
+    #                 self.build_overload_graph.__name__, self.retrieve_topology.__name__))
+
+    @calltracker
+    def retrieve_topology(self):
+        """This function retrieves the topology"""
+        # retrieve topology
+        mpcbus = self.grid.mpc['bus']
+        mpcgen = self.grid.mpc['gen']
+        half_nodes_ids = mpcbus[:len(mpcbus) // 2, 0]
+        node_to_substation = lambda x: int(float(str(x).replace('666', '')))
+        # intermediate step to get idx_or and idx_ex
+        nodes_or_ids = np.asarray(list(map(node_to_substation, self.grid.mpc['branch'][:, 0])))
+        nodes_ex_ids = np.asarray(list(map(node_to_substation, self.grid.mpc['branch'][:, 1])))
+        # origin
+        self.idx_or = [np.where(half_nodes_ids == or_id)[0][0] for or_id in nodes_or_ids]
+        # extremeties
+        self.idx_ex = [np.where(half_nodes_ids == ex_id)[0][0] for ex_id in nodes_ex_ids]
+        if self.debug:
+            print("============================= FUNCTION retrieve_topology =============================")
+            print("self.idx_or = ", self.idx_or)
+            print("self.idx_ex = ", self.idx_ex)
+
+
 
 
 
