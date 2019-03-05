@@ -1,4 +1,15 @@
 """ This file is the main file for the Expert Agent called Deesp """
+import functools
+
+
+def calltracker(func):
+    """A wrapper to check if a function has already been called or not """
+    @functools.wraps(func)
+    def wrapper(*args):
+        wrapper.has_been_called = True
+        return func(*args)
+    wrapper.has_been_called = False
+    return wrapper
 
 
 class Deesp:
@@ -26,6 +37,7 @@ class Deesp:
         """
         self.grid = _grid
 
+    @calltracker
     def compute_load_outage(self):
         """La perte de charge, Compute Load Outage Distribution Factor of overloaded lines"""
         assert(self.grid is not None)
@@ -58,5 +70,14 @@ class Deesp:
             print("new_e_flows = ", self.new_e_flows)
             print("delta_e_flows = ", self.delta_e_flows)
 
-    # def build_overlord_graph(self):
-    #     self.compute_load_outage()
+    # def build_overload_graph(self):
+    #     """We build an overload graph.
+    #     First we check if we computed the load outage"""
+    #     if self.compute_load_outage.has_been_called:
+    #         print("yes this function was already run")
+    #     else:
+    #         print("No, function \"{}\" has not been called yet".format(self.build_overload_graph.__name__))
+
+
+
+
