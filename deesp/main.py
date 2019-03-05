@@ -3,17 +3,35 @@ __author__ = "MarcM"
 import argparse
 from deesp.core import Deesp
 
+import pypownet.environment
+import pypownet.grid
+import pypownet.game as ggame
+
 parser = argparse.ArgumentParser(description="Expert System")
 parser.add_argument("-d", "--debug", default=False, type=bool,
                     help="Prints additional information for debugging purposes")
 
 
 def main():
-    print("Deesp Agent created...")
+    # parameters_folder = "../pypownet-master/parameters/default14"
+    parameters_folder = "/home/mozgawamar/Documents/deesp/deesp/ressources/parameters/default14"
+    game_level = "level0"
+    chronic_looping_mode = 'natural'
+    chronic_starting_id = 0
+    game_over_mode = 'soft'
+
+    # load a game
+    _game = ggame.Game(parameters_folder, game_level, chronic_looping_mode, chronic_starting_id, game_over_mode,
+                       renderer_frame_latency=20)
+
+    # retrieve a grid
+    _grid = _game.grid
+
     deesp = Deesp()
+    print("Deesp Agent created...")
 
     # we load the data from timestep t, usually an Overloaded situation
-    # deesp.load()
+    deesp.load(parameters_folder)
 
     # Compute Load Outage Distribution Factor of overloaded lines
     # deesp.compute_load_outage()
