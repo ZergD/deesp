@@ -43,6 +43,9 @@ def main():
     # Build Overload Distribution Graph
     deesp.build_overload_graph()
 
+    # Display the internal graph
+    deesp.display_graph("elec")
+
     # Identify local electric paths
     # deesp.get_local_epaths()
 

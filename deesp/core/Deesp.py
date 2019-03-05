@@ -1,9 +1,11 @@
 """ This file is the main file for the Expert Agent called Deesp """
 import functools
 import math
+import os
 
 import numpy as np
 import networkx as nx
+from graphviz import Digraph, Source
 
 
 def calltracker(func):
@@ -172,6 +174,29 @@ class Deesp:
             print("self.idx_ex = ", self.idx_ex)
             print("Nodes that are prods =", self.are_prods)
             print("Nodes that are loads =", self.are_loads)
+
+    def display_graph(self, display_type: str):
+        """ This function displays a graph
+        :param display_type: either "geo" or "elec"
+        :return:
+        """
+        folder_output = "./ressources/output/"
+        layout_engines = ["dot"]
+        original_filename = "test.dot"
+        final_filename = "final_test.pdf"
+        nx.drawing.nx_pydot.write_dot(self.g, original_filename)
+        cmd_line = "neato -n -Tpdf " + original_filename + " -o " + final_filename
+        print("we print the cmd line = ", cmd_line)
+        os.system(cmd_line)
+        os.system("evince " + final_filename + " &")
+
+        # this is the command line to create a pdf from a dot file, with fixed nodes
+        # neato - n2 - Tgif file.dot - o file.gif
+
+        for layout in layout_engines:
+            filename = "./graph_results/pywpow_graph_" + layout + ".dot"
+            gg = Source.from_file(original_filename, engine=layout)
+            gg.view(filename=filename)
 
 
 
