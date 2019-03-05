@@ -33,6 +33,8 @@ class Deesp:
         # topology part, idx_or is an array of edges representing the edge's origins. Same respectively with idx_ex.
         self.idx_or = None
         self.idx_ex = None
+        self.are_loads = None
+        self.are_prods = None
 
     def load(self, _grid):
         """
@@ -105,10 +107,19 @@ class Deesp:
         self.idx_or = [np.where(half_nodes_ids == or_id)[0][0] for or_id in nodes_or_ids]
         # extremeties
         self.idx_ex = [np.where(half_nodes_ids == ex_id)[0][0] for ex_id in nodes_ex_ids]
+
+        # retrieve loads and prods
+        nodes_ids = mpcbus[:, 0]
+        prods_ids = mpcgen[:, 0]
+        self.are_prods = np.logical_or([node_id in prods_ids for node_id in nodes_ids[:len(nodes_ids) // 2]],
+                                  [node_id in prods_ids for node_id in nodes_ids[len(nodes_ids) // 2:]])
+        self.are_loads = np.logical_or(self.grid.are_loads[:len(mpcbus) // 2], self.grid.are_loads[len(nodes_ids) // 2:])
         if self.debug:
             print("============================= FUNCTION retrieve_topology =============================")
             print("self.idx_or = ", self.idx_or)
             print("self.idx_ex = ", self.idx_ex)
+            print("Nodes that are prods =", self.are_prods)
+            print("Nodes that are loads =", self.are_loads)
 
 
 
