@@ -8,11 +8,12 @@ import pypownet.grid
 import pypownet.game as ggame
 
 parser = argparse.ArgumentParser(description="Expert System")
-parser.add_argument("-d", "--debug", default=False, type=bool,
+parser.add_argument("-d", "--debug", action="store_true",
                     help="Prints additional information for debugging purposes")
 
 
 def main():
+    args = parser.parse_args()
     # parameters_folder = "../pypownet-master/parameters/default14"
     parameters_folder = "/home/mozgawamar/Documents/deesp/deesp/ressources/parameters/default14"
     game_level = "level0"
@@ -27,14 +28,14 @@ def main():
     # retrieve a grid
     _grid = _game.grid
 
-    deesp = Deesp()
+    deesp = Deesp(args.debug)
     print("Deesp Agent created...")
 
     # we load the data from timestep t, usually an Overloaded situation
-    deesp.load(parameters_folder)
+    deesp.load(_grid)
 
-    # Compute Load Outage Distribution Factor of overloaded lines
-    # deesp.compute_load_outage()
+    # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
+    deesp.compute_load_outage()
 
     # Build Overload Distribution Graph
     # deesp.build_overload_graph()
