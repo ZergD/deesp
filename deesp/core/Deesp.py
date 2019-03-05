@@ -1,6 +1,9 @@
 """ This file is the main file for the Expert Agent called Deesp """
 import functools
+import math
+
 import numpy as np
+import networkx as nx
 
 
 def calltracker(func):
@@ -35,10 +38,12 @@ class Deesp:
         self.idx_ex = None
         self.are_loads = None
         self.are_prods = None
+        # custom layout for the graph to look like the simulator Pypownet.
+        self.custom_layout = [(-280, -81), (-100, -270), (366, -270), (366, -54), (-64, -54), (-64, 54), (366, 0),
+                              (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
 
     def load(self, _grid):
-        """
-        This function loads the data representing the current state of the network
+        """ This function loads the data representing the current state of the network
         :param _grid:
         :return:
         """
@@ -86,7 +91,54 @@ class Deesp:
                 print("============================= FUNCTION build_overload_graph =============================")
                 print("Functions: compute_load_outage() and retrieve_topology have both been called, we can build the "
                       "overload_graph")
-                pass
+
+            # We start building the Graph with NetworkX here.
+            # =========================================== GRAPH PART ===========================================
+            self.g = nx.DiGraph()
+            # =========================================== NODE PART ===========================================
+            i = 0
+            # We color the nodes depending if they are production or consumption
+            for value, is_prod, is_load in zip(self.custom_layout, self.are_prods, self.are_loads):
+                if is_prod:
+                    self.g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
+                                    prod_or_load="prod", style="filled", fillcolor="#f30000")  # red color
+                else:
+                    self.g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
+                                    prod_or_load="load", style="filled", fillcolor="#478fd0")  # blue color
+                i += 1
+            # =========================================== EDGE PART ===========================================
+            i = 1
+            for origin, extremity, reported_flow, current_flow in zip(self.idx_or, self.idx_ex, self.delta_e_flows,
+                                                                      self.initial_e_flows):
+                origin += 1
+                extremity += 1
+                penwidth = math.fabs(reported_flow) / 5
+                if penwidth == 0.0:
+                    penwidth = 0.1
+
+                if i == self.id_line_cut:
+                    self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
+                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth=penwidth)
+                elif reported_flow < 0:
+                    if current_flow > 0:
+                        self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                                        penwidth=penwidth)
+                    else:
+                        self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                                        penwidth=penwidth)
+                else:  # > 0
+                    if current_flow > 0:
+                        self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                                        penwidth=penwidth)
+                    else:
+                        self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                                        penwidth=penwidth)
+                i += 1
+
+            if self.debug:
+                print("============================= FINISHED building overload graph =============================")
+
+        # Else, the functions build_overload_graph and retrieve_topology have not been run
         else:
             if self.debug:
                 raise RuntimeError("Error, function \"{}\" or \"{}\" has not been called yet".format(
@@ -120,7 +172,6 @@ class Deesp:
             print("self.idx_ex = ", self.idx_ex)
             print("Nodes that are prods =", self.are_prods)
             print("Nodes that are loads =", self.are_loads)
-
 
 
 
