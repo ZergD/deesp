@@ -75,20 +75,20 @@ class Deesp:
             print("new_e_flows = ", self.new_e_flows)
             print("delta_e_flows = ", self.delta_e_flows)
 
-    # def build_overload_graph(self):
-    #     """We build an overload graph.
-    #     First we check if we computed the load outage"""
-    #
-    #     if self.compute_load_outage.has_been_called and self.retrieve_topology.has_been_called:
-    #         if self.debug:
-    #             print("============================= FUNCTION build_overload_graph =============================")
-    #             print("Functions: compute_load_outage() and retrieve_topology have both been called, we can build the "
-    #                   "overload_graph")
-    #             pass
-    #     else:
-    #         if self.debug:
-    #             raise RuntimeError("Error, function \"{}\" or \"{}\" has not been called yet".format(
-    #                 self.build_overload_graph.__name__, self.retrieve_topology.__name__))
+    def build_overload_graph(self):
+        """We build an overload graph.
+        First we check if we computed the load outage"""
+
+        if self.compute_load_outage.has_been_called and self.retrieve_topology.has_been_called:
+            if self.debug:
+                print("============================= FUNCTION build_overload_graph =============================")
+                print("Functions: compute_load_outage() and retrieve_topology have both been called, we can build the "
+                      "overload_graph")
+                pass
+        else:
+            if self.debug:
+                raise RuntimeError("Error, function \"{}\" or \"{}\" has not been called yet".format(
+                    self.build_overload_graph.__name__, self.retrieve_topology.__name__))
 
     @calltracker
     def retrieve_topology(self):

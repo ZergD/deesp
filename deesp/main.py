@@ -41,7 +41,7 @@ def main():
     deesp.retrieve_topology()
 
     # Build Overload Distribution Graph
-    # deesp.build_overload_graph()
+    deesp.build_overload_graph()
 
     # Identify local electric paths
     # deesp.get_local_epaths()
