@@ -1,5 +1,6 @@
 """ This file is the main file for the Expert Agent called Deesp """
 import functools
+import datetime
 import math
 import os
 
@@ -180,25 +181,41 @@ class Deesp:
         :param display_type: either "geo" or "elec"
         :return:
         """
-        folder_output = "./ressources/output/"
-        layout_engines = ["dot"]
-        original_filename = "test.dot"
-        final_filename = "final_test.pdf"
-        nx.drawing.nx_pydot.write_dot(self.g, original_filename)
-        cmd_line = "neato -n -Tpdf " + original_filename + " -o " + final_filename
-        print("we print the cmd line = ", cmd_line)
-        os.system(cmd_line)
-        os.system("evince " + final_filename + " &")
 
-        # this is the command line to create a pdf from a dot file, with fixed nodes
-        # neato - n2 - Tgif file.dot - o file.gif
+        assert(isinstance(display_type, str))
 
-        for layout in layout_engines:
-            filename = "./graph_results/pywpow_graph_" + layout + ".dot"
-            gg = Source.from_file(original_filename, engine=layout)
-            gg.view(filename=filename)
+        # we create filenames
+        folder_output = "./deesp/ressources/output/"
+        # current_date_no_filter = datetime.datetime.now()
+        # current_date = current_date_no_filter.strftime("%Y-%m-%d_%H-%M")
+        # filename_dot = "graph_result_" + display_type + "_" + current_date + ".dot"
+        # filename_pdf = "graph_result_" + display_type + "_" + current_date + ".pdf"
+        filename_dot = "graph_result_" + display_type + ".dot"
+        filename_pdf = "graph_result_" + display_type + ".pdf"
+        hard_filename_dot = folder_output + filename_dot
+        # hard_filename_dot = filename_dot
+        hard_filename_pdf = folder_output + filename_pdf
+        if self.debug:
+            print("============================= FUNCTION display_graph =============================")
+            print("hard_filename = ", hard_filename_pdf)
 
+        # we save the graph in a dot file
+        nx.drawing.nx_pydot.write_dot(self.g, hard_filename_dot)
 
+        if display_type is "geo":
+            cmd_line = "neato -n -Tpdf " + hard_filename_dot + " -o " + hard_filename_pdf
+            if self.debug:
+                print("we print the cmd line = ", cmd_line)
+            os.system(cmd_line)
+            os.system("evince " + hard_filename_pdf + " &")
 
-
+        elif display_type is "elec":
+            layout_engines = ["dot"]
+            for layout in layout_engines:
+                # this line reads from original_filename
+                gg = Source.from_file(hard_filename_dot, engine=layout)
+                # this line creates files
+                # the view function adds .pdf to the filename so we remove it first
+                filename, file_extention = os.path.splitext(hard_filename_pdf)
+                gg.view(filename=filename, cleanup=True)
 

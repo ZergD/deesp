@@ -15,7 +15,7 @@ parser.add_argument("-d", "--debug", action="store_true",
 def main():
     args = parser.parse_args()
     # parameters_folder = "../pypownet-master/parameters/default14"
-    parameters_folder = "/home/mozgawamar/Documents/deesp/deesp/ressources/parameters/default14"
+    parameters_folder = "./deesp/ressources/parameters/default14"
     game_level = "level0"
     chronic_looping_mode = 'natural'
     chronic_starting_id = 0
@@ -44,7 +44,7 @@ def main():
     deesp.build_overload_graph()
 
     # Display the internal graph
-    deesp.display_graph("elec")
+    deesp.display_graph("geo")
 
     # Identify local electric paths
     # deesp.get_local_epaths()
