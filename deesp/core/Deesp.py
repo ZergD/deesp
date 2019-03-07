@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 import networkx as nx
-from graphviz import Digraph, Source
+from graphviz import Source
 
 
 def calltracker(func):
@@ -44,6 +44,8 @@ class Deesp:
         # custom layout for the graph to look like the simulator Pypownet.
         self.custom_layout = [(-280, -81), (-100, -270), (366, -270), (366, -54), (-64, -54), (-64, 54), (366, 0),
                               (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
+        # dictionnary containing all interesting electric paths: constrained path, parallel path, loop path
+        self.local_epaths = None
 
     def load(self, _grid):
         """ This function loads the data representing the current state of the network
@@ -121,21 +123,21 @@ class Deesp:
 
                 if i == self.id_line_cut:
                     self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
-                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth=penwidth)
+                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth)
                 elif reported_flow < 0:
                     if current_flow > 0:
                         self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
-                                        penwidth=penwidth)
+                                        penwidth="%.2f" % penwidth)
                     else:
                         self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
-                                        penwidth=penwidth)
+                                        penwidth="%.2f" % penwidth)
                 else:  # > 0
                     if current_flow > 0:
                         self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
-                                        penwidth=penwidth)
+                                        penwidth="%.2f" % penwidth)
                     else:
                         self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
-                                        penwidth=penwidth)
+                                        penwidth="%.2f" % penwidth)
                 i += 1
 
             if self.debug:
@@ -216,6 +218,40 @@ class Deesp:
                 gg = Source.from_file(hard_filename_dot, engine=layout)
                 # this line creates files
                 # the view function adds .pdf to the filename so we remove it first
+
                 filename, file_extention = os.path.splitext(hard_filename_pdf)
                 gg.view(filename=filename, cleanup=True)
+
+    def compute_meaningful_structures(self):
+        """Computes meaningful structures from the main graph: constrained paths, //paths, up/down-stream areas,
+         etc..."""
+        self.dev_graph_courses_tests()
+        self.local_epaths = self.get_local_epaths()
+
+    def get_local_epaths(self) -> list:
+        """This function returns a dictionnary of all interesting paths:
+        Constrained path, parallel path, loop path,
+        """
+        # get constrained_paths
+        self.get_constrained_paths()
+        return []
+
+    def get_constrained_paths(self):
+        """Retrieves the constrained paths. A small graph representing the constrained path"""
+
+        assert(isinstance(self.g, nx.DiGraph))
+
+
+        # get indices of positive edges
+
+        # delete from graph positive edges
+        pass
+
+    def dev_graph_courses_tests(self):
+        if self.debug:
+            for n, nbrsdict in self.g.adjacency():
+                print(f"n = {n}, nbrsdict = {nbrsdict}")
+
+            for u, v, report in self.g.edges(data="xlabel"):
+                print(f"u = {u}, v = {v}, report = {report}")
 

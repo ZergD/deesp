@@ -35,16 +35,19 @@ def main():
     deesp.load(_grid)
 
     # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
-    deesp.compute_load_outage()
+    deesp.compute_load_outage()  # compute the load outage of the line in overflow
 
     # we retrieve the topology
     deesp.retrieve_topology()
 
     # Build Overload Distribution Graph
-    deesp.build_overload_graph()
+    deesp.build_overload_graph()  # possible arguments in this function, change some vars
 
     # Display the internal graph
     deesp.display_graph("geo")
+
+    # Computes meaningful structures from the main graph: constrained paths, //paths, up/down-stream areas, etc...
+    deesp.compute_meaningful_structures()
 
     # Identify local electric paths
     # deesp.get_local_epaths()
