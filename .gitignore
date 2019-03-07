@@ -15,5 +15,6 @@
 # we want to ignore all generated files
 /deesp/ressources/output/
 /demos/start_demo/outputs/
+/demos/start_demo/octave-workspace
 .ipynb_checkpoints/
 
