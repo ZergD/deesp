@@ -193,6 +193,3 @@ IFrame("./outputs/jupyter_res1.pdf", width=800, height=700)
 # -
 
 # # <font color=orange>4) Identify Local Electrical Paths</font>
-
-# Let us add here a final test
-print("This is our final test")
