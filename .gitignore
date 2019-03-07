@@ -12,3 +12,8 @@
 .idea/usage.statistics.xml
 .idea/tasks.xml
 
+# we want to ignore all generated files
+/deesp/ressources/output/
+/demos/start_demo/outputs/
+.ipynb_checkpoints/
+
