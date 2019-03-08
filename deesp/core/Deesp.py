@@ -4,6 +4,8 @@ import datetime
 import math
 import os
 
+import pprint
+
 import numpy as np
 import networkx as nx
 from graphviz import Source
@@ -62,11 +64,13 @@ class Deesp:
         depth = 0
         fname_end = '_cascading%d' % depth
 
+
         # we compute initial_e_flows
         self.initial_e_flows = self.grid.extract_flows_a()
 
+
         # we disable the line 10
-        self.id_line_cut = 10
+        self.id_line_cut = 9
         if self.debug:
             print("============================= FUNCTION compute_load_outage =============================")
             print("line statuses = ", self.grid.get_lines_status())
@@ -87,7 +91,7 @@ class Deesp:
             print("new_e_flows = ", self.new_e_flows)
             print("delta_e_flows = ", self.delta_e_flows)
 
-    def build_overload_graph(self):
+    def build_overload_graph(self, axially_symetric=False):
         """We build an overload graph.
         First we check if we computed the load outage"""
 
@@ -96,6 +100,12 @@ class Deesp:
                 print("============================= FUNCTION build_overload_graph =============================")
                 print("Functions: compute_load_outage() and retrieve_topology have both been called, we can build the "
                       "overload_graph")
+
+            if axially_symetric:
+                x_inversed_layout = []
+                for x in self.custom_layout:
+                    x_inversed_layout.append((x[0] * -1, x[1]))
+                self.custom_layout = x_inversed_layout
 
             # We start building the Graph with NetworkX here.
             # =========================================== GRAPH PART ===========================================
@@ -112,7 +122,11 @@ class Deesp:
                                     prod_or_load="load", style="filled", fillcolor="#478fd0")  # blue color
                 i += 1
             # =========================================== EDGE PART ===========================================
-            i = 1
+            i = 0
+            if self.debug:
+                ar = list(zip(self.idx_or, self.idx_ex, self.delta_e_flows, self.initial_e_flows))
+                print("ZIP OF DEATH = ")
+                pprint.pprint(ar)
             for origin, extremity, reported_flow, current_flow in zip(self.idx_or, self.idx_ex, self.delta_e_flows,
                                                                       self.initial_e_flows):
                 origin += 1
@@ -123,7 +137,8 @@ class Deesp:
 
                 if i == self.id_line_cut:
                     self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
-                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth)
+                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth,
+                                    constrained=True)
                 elif reported_flow < 0:
                     if current_flow > 0:
                         self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
@@ -181,6 +196,7 @@ class Deesp:
     def display_graph(self, display_type: str):
         """ This function displays a graph
         :param display_type: either "geo" or "elec"
+        :param axially_symetric: if True, it performs an axial symetry on the graph, (only for display purpose)
         :return:
         """
 
@@ -241,11 +257,26 @@ class Deesp:
 
         assert(isinstance(self.g, nx.DiGraph))
 
-
+        # array containing the indices of edges with positive report flow
+        pos_edges = []
         # get indices of positive edges
+        i = 1
+        for u, v, report in self.g.edges(data="xlabel"):
+            if float(report) > 0:
+                pos_edges.append((i, (u, v)))
+            i += 1
 
+        print(f"pos_edges = {pos_edges}")
+
+        # we first remove the constrained edge - "black one"
+
+        # TODO TO CONTINUE
         # delete from graph positive edges
-        pass
+        # this extracts the (u,v) from pos_edges
+        # print("pos_edges test = ", list(zip(*pos_edges))[1])
+        # self.g.remove_edges_from(list(zip(*pos_edges))[1])
+
+        # self.display_graph("geo")
 
     def dev_graph_courses_tests(self):
         if self.debug:

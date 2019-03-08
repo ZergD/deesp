@@ -44,7 +44,9 @@ def main():
     deesp.build_overload_graph()  # possible arguments in this function, change some vars
 
     # Display the internal graph
-    deesp.display_graph("geo")
+    deesp.display_graph("geo")  # powerflows => graph with powerflows, overload => overload graph
+
+    # _game.render(None)
 
     # Computes meaningful structures from the main graph: constrained paths, //paths, up/down-stream areas, etc...
     deesp.compute_meaningful_structures()
