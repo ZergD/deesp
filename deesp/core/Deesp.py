@@ -292,6 +292,10 @@ class Deesp:
             print("Nodes that are prods =", self.are_prods)
             print("Nodes that are loads =", self.are_loads)
 
+    def get_snapshot(self, _grid):
+        """Given a grid, this function displays the current grid as a graph"""
+        pass
+
     def display_graph(self, display_type: str):
         """ This function displays a graph
         :param display_type: either "geo" or "elec"
