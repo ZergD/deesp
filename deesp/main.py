@@ -24,6 +24,7 @@ def main():
     # load a game
     _game = ggame.Game(parameters_folder, game_level, chronic_looping_mode, chronic_starting_id, game_over_mode,
                        renderer_frame_latency=20)
+    # _game.render(None)
 
     # retrieve a grid
     _grid = _game.grid
@@ -41,7 +42,8 @@ def main():
     deesp.retrieve_topology()
 
     # Build Overload Distribution Graph
-    deesp.build_overload_graph()  # possible arguments in this function, change some vars
+    # deesp.build_overload_graph()  # possible arguments in this function, change some vars
+    deesp.build_graph(axially_symetric=False)
 
     # Display the internal graph
     deesp.display_graph("geo")  # powerflows => graph with powerflows, overload => overload graph

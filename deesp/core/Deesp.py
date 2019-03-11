@@ -48,6 +48,7 @@ class Deesp:
                               (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
         # dictionnary containing all interesting electric paths: constrained path, parallel path, loop path
         self.local_epaths = None
+        self.lines_por_values = None
 
     def load(self, _grid):
         """ This function loads the data representing the current state of the network
@@ -68,14 +69,13 @@ class Deesp:
         # we compute initial_e_flows
         self.initial_e_flows = self.grid.extract_flows_a()
 
-
         # we disable the line 10
-        self.id_line_cut = 9
+        self.id_line_cut = 30
         if self.debug:
             print("============================= FUNCTION compute_load_outage =============================")
             print("line statuses = ", self.grid.get_lines_status())
 
-        self.grid.get_lines_status()[self.id_line_cut] = 0
+        # self.grid.get_lines_status()[self.id_line_cut] = 0
 
         if self.debug:
             print("line statuses = ", self.grid.get_lines_status())
@@ -90,6 +90,100 @@ class Deesp:
             print("initial_e_flows = ", self.initial_e_flows)
             print("new_e_flows = ", self.new_e_flows)
             print("delta_e_flows = ", self.delta_e_flows)
+            print("we recompute for test!!!!")
+            self.new_e_flows = self.grid.extract_flows_a()
+            print("new new e flows = ", self.new_e_flows)
+
+    def build_nodes(self, custom_layout):
+        # =========================================== NODE PART ===========================================
+        i = 0
+        # We color the nodes depending if they are production or consumption
+        for value, is_prod, is_load in zip(custom_layout, self.are_prods, self.are_loads):
+            if is_prod:
+                self.g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
+                                prod_or_load="prod", style="filled", fillcolor="#f30000")  # red color
+            else:
+                self.g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
+                                prod_or_load="load", style="filled", fillcolor="#478fd0")  # blue color
+            i += 1
+
+    def build_edges(self, custom_layout, gtype="powerflow"):
+        if self.debug:
+            ar = list(zip(self.idx_or, self.idx_ex, self.delta_e_flows, self.initial_e_flows))
+            print("ZIP OF DEATH = ")
+            pprint.pprint(ar)
+
+        if gtype is "powerflow":
+            for origin, extremity, reported_flow, current_flow, line_por in zip(self.idx_or, self.idx_ex,
+                                                                                self.delta_e_flows,
+                                                                                self.initial_e_flows,
+                                                                                self.lines_por_values):
+                origin += 1
+                extremity += 1
+                penwidth = math.fabs(current_flow) / 5
+                if penwidth == 0.0:
+                    penwidth = 0.1
+
+                if line_por >= 0:
+                    self.g.add_edge(extremity, origin, xlabel="%.2f" % current_flow, color="gray", fontsize=10,
+                                    penwidth="%.2f" % penwidth)
+                else:
+                    self.g.add_edge(origin, extremity, xlabel="%.2f" % current_flow, color="gray", fontsize=10,
+                                    penwidth="%.2f" % penwidth)
+
+        elif gtype is "overflow":
+            i = 0
+            for origin, extremity, reported_flow, current_flow, line_por in zip(self.idx_or,
+                                                                                self.idx_ex, self.delta_e_flows,
+                                                                                self.initial_e_flows,
+                                                                                self.lines_por_values):
+                origin += 1
+                extremity += 1
+                penwidth = math.fabs(reported_flow) / 5
+                if penwidth == 0.0:
+                    penwidth = 0.1
+                if i == self.id_line_cut:
+                    self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
+                                    style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth,
+                                    constrained=True)
+                elif reported_flow < 0:
+                    if line_por >= 0:
+                        self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                                        penwidth="%.2f" % penwidth)
+                    else:
+                        self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                                        penwidth="%.2f" % penwidth)
+                else:  # > 0
+                    if line_por >= 0:
+                        self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                                        penwidth="%.2f" % penwidth)
+                    else:
+                        self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                                        penwidth="%.2f" % penwidth)
+                i += 1
+        else:
+            raise RuntimeError("GType of graph to build not understood!")
+
+    def build_graph(self, axially_symetric=False, gtype="powerflow"):
+
+        # We start building the Graph with NetworkX here.
+        # =========================================== GRAPH PART ===========================================
+        self.g = nx.DiGraph()
+
+        custom_layout = [(-280, -81), (-100, -270), (366, -270), (366, -54), (-64, -54), (-64, 54), (366, 0),
+                              (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
+        if axially_symetric:
+            x_inversed_layout = []
+            for x in custom_layout:
+                x_inversed_layout.append((x[0] * -1, x[1]))
+            custom_layout = x_inversed_layout
+
+        # =========================================== NODE PART ===========================================
+        self.build_nodes(custom_layout)
+        # =========================================== EDGE PART ===========================================
+        self.build_edges(custom_layout, gtype)
+
+        # self.save_to_file("")
 
     def build_overload_graph(self, axially_symetric=False):
         """We build an overload graph.
@@ -127,8 +221,10 @@ class Deesp:
                 ar = list(zip(self.idx_or, self.idx_ex, self.delta_e_flows, self.initial_e_flows))
                 print("ZIP OF DEATH = ")
                 pprint.pprint(ar)
-            for origin, extremity, reported_flow, current_flow in zip(self.idx_or, self.idx_ex, self.delta_e_flows,
-                                                                      self.initial_e_flows):
+            for origin, extremity, reported_flow, current_flow, line_por in zip(self.idx_or, self.idx_ex,
+                                                                                self.delta_e_flows,
+                                                                                self.initial_e_flows,
+                                                                                self.lines_por_values):
                 origin += 1
                 extremity += 1
                 penwidth = math.fabs(reported_flow) / 5
@@ -140,14 +236,14 @@ class Deesp:
                                     style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth,
                                     constrained=True)
                 elif reported_flow < 0:
-                    if current_flow > 0:
+                    if line_por >= 0:
                         self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
                                         penwidth="%.2f" % penwidth)
                     else:
                         self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
                                         penwidth="%.2f" % penwidth)
                 else:  # > 0
-                    if current_flow > 0:
+                    if line_por >= 0:
                         self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
                                         penwidth="%.2f" % penwidth)
                     else:
@@ -186,10 +282,13 @@ class Deesp:
         self.are_prods = np.logical_or([node_id in prods_ids for node_id in nodes_ids[:len(nodes_ids) // 2]],
                                   [node_id in prods_ids for node_id in nodes_ids[len(nodes_ids) // 2:]])
         self.are_loads = np.logical_or(self.grid.are_loads[:len(mpcbus) // 2], self.grid.are_loads[len(nodes_ids) // 2:])
+        self.lines_por_values = self.grid.mpc['branch'][:, 13]
+
         if self.debug:
             print("============================= FUNCTION retrieve_topology =============================")
             print("self.idx_or = ", self.idx_or)
             print("self.idx_ex = ", self.idx_ex)
+            print("self.lines_por_values = ", self.lines_por_values)
             print("Nodes that are prods =", self.are_prods)
             print("Nodes that are loads =", self.are_loads)
 
