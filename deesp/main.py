@@ -35,23 +35,37 @@ def main():
     # we load the data from timestep t, usually an Overloaded situation
     deesp.load(_grid)
 
+    g = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
+    deesp.display_graph(g, "geo", name="powerflow_before_cut")
+
+    # ######################## CUT AND RECOMPUTE #####################
+    line_cut = 9
+    depth = 0
+    fname_end = '_cascading%d' % depth
+    _grid.get_lines_status()[line_cut] = 0
+    _grid.compute_loadflow(fname_end)
+    # ######################## CUT AND RECOMPUTE #####################
+
+    g = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
+    deesp.display_graph(g, "geo", name="powerflow_after_cut")
+
     # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
-    deesp.compute_load_outage()  # compute the load outage of the line in overflow
+    # deesp.compute_load_outage()  # compute the load outage of the line in overflow
 
     # we retrieve the topology
-    deesp.retrieve_topology()
+    # deesp.retrieve_topology()
 
     # Build Overload Distribution Graph
     # deesp.build_overload_graph()  # possible arguments in this function, change some vars
-    deesp.build_graph(axially_symetric=False)
+    # deesp.build_graph(axially_symetric=False)
 
     # Display the internal graph
-    deesp.display_graph("geo")  # powerflows => graph with powerflows, overload => overload graph
+    # deesp.display_graph("geo")  # powerflows => graph with powerflows, overload => overload graph
 
     # _game.render(None)
 
     # Computes meaningful structures from the main graph: constrained paths, //paths, up/down-stream areas, etc...
-    deesp.compute_meaningful_structures()
+    # deesp.compute_meaningful_structures()
 
     # Identify local electric paths
     # deesp.get_local_epaths()
