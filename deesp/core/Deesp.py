@@ -13,16 +13,19 @@ from graphviz import Source
 
 def calltracker(func):
     """A wrapper to check if a function has already been called or not """
+
     @functools.wraps(func)
     def wrapper(*args):
         wrapper.has_been_called = True
         return func(*args)
+
     wrapper.has_been_called = False
     return wrapper
 
 
 class Deesp:
     """ Summary of class here. """
+
     def __init__(self, debug=False):
         """Instanciates a Dispatcher Deesp"""
         print("Deesp init executed ...")
@@ -60,11 +63,10 @@ class Deesp:
     @calltracker
     def compute_load_outage(self):
         """La perte de charge, Compute Load Outage Distribution Factor of overloaded lines"""
-        assert(self.grid is not None)
+        assert (self.grid is not None)
 
         depth = 0
         fname_end = '_cascading%d' % depth
-
 
         # we compute initial_e_flows
         self.initial_e_flows = self.grid.extract_flows_a()
@@ -94,7 +96,6 @@ class Deesp:
             self.new_e_flows = self.grid.extract_flows_a()
             print("new new e flows = ", self.new_e_flows)
 
-
     # self.build_edges(g, custom_layout, gtype, origins, extremities, line_por_values, edge_weights)
 
     def build_graph_old(self, axially_symetric=False, gtype="powerflow"):
@@ -104,7 +105,7 @@ class Deesp:
         self.g = nx.DiGraph()
 
         custom_layout = [(-280, -81), (-100, -270), (366, -270), (366, -54), (-64, -54), (-64, 54), (366, 0),
-                              (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
+                         (438, 0), (326, 54), (222, 108), (79, 162), (-152, 270), (-64, 270), (222, 216)]
         if axially_symetric:
             x_inversed_layout = []
             for x in custom_layout:
@@ -213,8 +214,9 @@ class Deesp:
         nodes_ids = mpcbus[:, 0]
         prods_ids = mpcgen[:, 0]
         self.are_prods = np.logical_or([node_id in prods_ids for node_id in nodes_ids[:len(nodes_ids) // 2]],
-                                  [node_id in prods_ids for node_id in nodes_ids[len(nodes_ids) // 2:]])
-        self.are_loads = np.logical_or(self.grid.are_loads[:len(mpcbus) // 2], self.grid.are_loads[len(nodes_ids) // 2:])
+                                       [node_id in prods_ids for node_id in nodes_ids[len(nodes_ids) // 2:]])
+        self.are_loads = np.logical_or(self.grid.are_loads[:len(mpcbus) // 2],
+                                       self.grid.are_loads[len(nodes_ids) // 2:])
         self.lines_por_values = self.grid.mpc['branch'][:, 13]
 
         if self.debug:
@@ -227,7 +229,7 @@ class Deesp:
 
     # def cut_line(self, line_number):
 
-    def build_graph(self, _grid, gtype, axially_symetric=False):
+    def build_graph(self, _grid, gtype, axially_symetric=False, delta_flows=None):
         """Given a grid, this function displays the current grid as a graph"""
 
         g = nx.DiGraph()
@@ -263,7 +265,12 @@ class Deesp:
         are_loads = np.logical_or(_grid.are_loads[:len(mpcbus) // 2], _grid.are_loads[len(nodes_ids) // 2:])
         lines_por_values = _grid.mpc['branch'][:, 13]
 
-        current_flows = _grid.extract_flows_a()
+        lines_cut = np.argwhere(self.grid.get_lines_status() == 0)
+
+        if delta_flows is not None and gtype is "overflow":
+            current_flows = delta_flows
+        else:
+            current_flows = _grid.extract_flows_a()
 
         if self.debug:
             print("============================= FUNCTION retrieve_topology =============================")
@@ -276,9 +283,10 @@ class Deesp:
         # =========================================== NODE PART ===========================================
         build_nodes(g, custom_layout, are_prods, are_loads)
         # =========================================== EDGE PART ===========================================
-        build_edges(g, idx_or, idx_ex, lines_por_values, edge_weights=current_flows, debug=self.debug, gtype=gtype)
+        build_edges(g, idx_or, idx_ex, lines_por_values, edge_weights=current_flows, debug=self.debug, gtype=gtype,
+                    lines_cut=lines_cut)
 
-        return g
+        return g, current_flows
 
     def display_graph(self, g, display_type: str, name: str):
         """ This function displays a graph
@@ -288,7 +296,7 @@ class Deesp:
         :return:
         """
 
-        assert(isinstance(display_type, str))
+        assert (isinstance(display_type, str))
 
         # we create filenames
         folder_output = "./deesp/ressources/output/"
@@ -347,7 +355,7 @@ class Deesp:
     def get_constrained_paths(self):
         """Retrieves the constrained paths. A small graph representing the constrained path"""
 
-        assert(isinstance(self.g, nx.DiGraph))
+        assert (isinstance(self.g, nx.DiGraph))
 
         # array containing the indices of edges with positive report flow
         pos_edges = []
@@ -393,7 +401,7 @@ def build_nodes(g, custom_layout, are_prods, are_loads):
         i += 1
 
 
-def build_edges(g, idx_or, idx_ex, line_por_values, edge_weights, gtype, debug=False):
+def build_edges(g, idx_or, idx_ex, line_por_values, edge_weights, gtype, lines_cut=None, debug=False):
     if debug:
         ar = list(zip(idx_or, idx_ex, line_por_values, edge_weights))
         print("ZIP OF DEATH = ")
@@ -414,35 +422,32 @@ def build_edges(g, idx_or, idx_ex, line_por_values, edge_weights, gtype, debug=F
                 g.add_edge(origin, extremity, xlabel="%.2f" % weight_value, color="gray", fontsize=10,
                            penwidth="%.2f" % penwidth)
 
-    # elif gtype is "overflow":
-    #     i = 0
-    #     for origin, extremity, reported_flow, current_flow, line_por in zip(self.idx_or,
-    #                                                                         self.idx_ex, self.delta_e_flows,
-    #                                                                         self.initial_e_flows,
-    #                                                                         self.lines_por_values):
-    #         origin += 1
-    #         extremity += 1
-    #         penwidth = math.fabs(reported_flow) / 5
-    #         if penwidth == 0.0:
-    #             penwidth = 0.1
-    #         if i == self.id_line_cut:
-    #             self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
-    #                             style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth,
-    #                             constrained=True)
-    #         elif reported_flow < 0:
-    #             if line_por >= 0:
-    #                 self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
-    #                                 penwidth="%.2f" % penwidth)
-    #             else:
-    #                 self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
-    #                                 penwidth="%.2f" % penwidth)
-    #         else:  # > 0
-    #             if line_por >= 0:
-    #                 self.g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
-    #                                 penwidth="%.2f" % penwidth)
-    #             else:
-    #                 self.g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
-    #                                 penwidth="%.2f" % penwidth)
-    #         i += 1
+    elif gtype is "overflow":
+        i = 0
+        for origin, extremity, reported_flow, line_por in zip(idx_or, idx_ex, edge_weights, line_por_values):
+            origin += 1
+            extremity += 1
+            penwidth = math.fabs(reported_flow) / 5
+            if penwidth == 0.0:
+                penwidth = 0.1
+            if i in lines_cut:
+                g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="black",
+                           style="dotted, setlinewidth(2)", fontsize=10, penwidth="%.2f" % penwidth,
+                           constrained=True)
+            elif reported_flow < 0:
+                if line_por >= 0:
+                    g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                               penwidth="%.2f" % penwidth)
+                else:
+                    g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="blue", fontsize=10,
+                               penwidth="%.2f" % penwidth)
+            else:  # > 0
+                if line_por >= 0:
+                    g.add_edge(origin, extremity, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                               penwidth="%.2f" % penwidth)
+                else:
+                    g.add_edge(extremity, origin, xlabel="%.2f" % reported_flow, color="red", fontsize=10,
+                               penwidth="%.2f" % penwidth)
+            i += 1
     else:
         raise RuntimeError("Graph's GType not understood, cannot build_edges!")

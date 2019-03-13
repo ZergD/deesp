@@ -4,7 +4,7 @@ import argparse
 from deesp.core import Deesp
 
 import pypownet.environment
-import pypownet.grid
+# import pypownet.grid
 import pypownet.game as ggame
 
 parser = argparse.ArgumentParser(description="Expert System")
@@ -35,19 +35,28 @@ def main():
     # we load the data from timestep t, usually an Overloaded situation
     deesp.load(_grid)
 
-    g = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
+    g, initial_flows = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
     deesp.display_graph(g, "geo", name="powerflow_before_cut")
 
-    # ######################## CUT AND RECOMPUTE #####################
+    # ######################## CUT AND RECOMPUTE #########################
+    # FAIRE UNE FUNCTION dans DEESP QUI FAIT JUSTE CA ?
     line_cut = 9
     depth = 0
     fname_end = '_cascading%d' % depth
     _grid.get_lines_status()[line_cut] = 0
     _grid.compute_loadflow(fname_end)
-    # ######################## CUT AND RECOMPUTE #####################
+    # ######################## CUT AND RECOMPUTE END #####################
 
-    g = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
+    g, new_flows = deesp.build_graph(_grid, gtype="powerflow", axially_symetric=False)
     deesp.display_graph(g, "geo", name="powerflow_after_cut")
+
+    # #####################" COMPUTE DELTA FLOWS
+    delta_flows = new_flows - initial_flows
+
+    # get overflow graph
+    over_g, flows = deesp.build_graph(_grid, gtype="overflow", axially_symetric=False, delta_flows=delta_flows)
+    deesp.display_graph(over_g, "geo", name="overflow_after_cut")
+
 
     # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
     # deesp.compute_load_outage()  # compute the load outage of the line in overflow
