@@ -15,7 +15,8 @@ parser.add_argument("-d", "--debug", action="store_true",
 def main():
     args = parser.parse_args()
     # parameters_folder = "../pypownet-master/parameters/default14"
-    parameters_folder = "./deesp/ressources/parameters/default14"
+    # parameters_folder = "./deesp/ressources/parameters/default14"
+    parameters_folder = "./deesp/ressources/parameters/static_ieee14"
     game_level = "level0"
     chronic_looping_mode = 'natural'
     chronic_starting_id = 0
@@ -56,7 +57,6 @@ def main():
     # get overflow graph
     over_g, flows = deesp.build_graph(_grid, gtype="overflow", axially_symetric=False, delta_flows=delta_flows)
     deesp.display_graph(over_g, "geo", name="overflow_after_cut")
-
 
     # La perte de charge, Compute Load Outage Distribution Factor of overloaded lines
     # deesp.compute_load_outage()  # compute the load outage of the line in overflow

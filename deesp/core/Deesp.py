@@ -263,6 +263,8 @@ class Deesp:
         are_prods = np.logical_or([node_id in prods_ids for node_id in nodes_ids[:len(nodes_ids) // 2]],
                                   [node_id in prods_ids for node_id in nodes_ids[len(nodes_ids) // 2:]])
         are_loads = np.logical_or(_grid.are_loads[:len(mpcbus) // 2], _grid.are_loads[len(nodes_ids) // 2:])
+        prods_values = _grid.mpc['gen'][:, 1]
+        loads_values = _grid.mpc['bus'][_grid.are_loads, 2]
         lines_por_values = _grid.mpc['branch'][:, 13]
 
         lines_cut = np.argwhere(self.grid.get_lines_status() == 0)
@@ -279,9 +281,12 @@ class Deesp:
             print("self.lines_por_values = ", lines_por_values)
             print("Nodes that are prods =", are_prods)
             print("Nodes that are loads =", are_loads)
+            print("prods_values = ", prods_values)
+            print("loads_values = ", loads_values)
+            print("delta prods load = ", prods_values - loads_values)
 
         # =========================================== NODE PART ===========================================
-        build_nodes(g, custom_layout, are_prods, are_loads)
+        build_nodes(g, custom_layout, are_prods, are_loads, prods_values, loads_values)
         # =========================================== EDGE PART ===========================================
         build_edges(g, idx_or, idx_ex, lines_por_values, edge_weights=current_flows, debug=self.debug, gtype=gtype,
                     lines_cut=lines_cut)
@@ -387,17 +392,25 @@ class Deesp:
                 print(f"u = {u}, v = {v}, report = {report}")
 
 
-def build_nodes(g, custom_layout, are_prods, are_loads):
+def build_nodes(g, custom_layout, are_prods, are_loads, prods_values, loads_values):
     # =========================================== NODE PART ===========================================
+    prods_iter, loads_iter = iter(prods_values), iter(loads_values)
     i = 0
     # We color the nodes depending if they are production or consumption
     for value, is_prod, is_load in zip(custom_layout, are_prods, are_loads):
-        if is_prod:
+        prod = next(prods_iter) if is_prod else 0.
+        load = next(loads_iter) if is_load else 0.
+        prod_minus_load = prod - load
+        print(f"Node n°[{i+1}] : [{prod}] - [{load}] ")
+        if prod_minus_load > 0:  # PROD
             g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
                        prod_or_load="prod", style="filled", fillcolor="#f30000")  # red color
-        else:
+        elif prod_minus_load < 0:  # LOAD
             g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
                        prod_or_load="load", style="filled", fillcolor="#478fd0")  # blue color
+        else:  # WHITE COLOR
+            g.add_node(i + 1, pos=(str(value[0]) + ", " + str(value[1]) + "!"), pin=True,
+                       prod_or_load="load", style="filled", fillcolor="#ffffed")  # blue color
         i += 1
 
 
@@ -416,10 +429,10 @@ def build_edges(g, idx_or, idx_ex, line_por_values, edge_weights, gtype, lines_c
                 penwidth = 0.1
 
             if line_por >= 0:
-                g.add_edge(extremity, origin, xlabel="%.2f" % weight_value, color="gray", fontsize=10,
+                g.add_edge(origin, extremity, xlabel="%.2f" % weight_value, color="gray", fontsize=10,
                            penwidth="%.2f" % penwidth)
             else:
-                g.add_edge(origin, extremity, xlabel="%.2f" % weight_value, color="gray", fontsize=10,
+                g.add_edge(extremity, origin, xlabel="%.2f" % weight_value, color="gray", fontsize=10,
                            penwidth="%.2f" % penwidth)
 
     elif gtype is "overflow":
